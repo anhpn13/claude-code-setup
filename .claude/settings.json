@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are the last-line reviewer before a `git push` to a (potentially public) GitHub repo.\n\nThe proposed Bash command: $ARGUMENTS\n\nA separate `gitleaks` scan already passed for pattern-based secrets. Your job is the *contextual* review gitleaks can't do.\n\n# Step 1 — Inspect the diff\n\nUse the Bash tool to fetch the actual diff that would be pushed:\n  - If `git rev-parse --verify '@{u}'` succeeds: `git log -p @{u}..HEAD`\n  - Otherwise (initial push): `git diff $(git hash-object -t tree /dev/null) HEAD`\n\nYou can also use Read/Grep/Glob on individual files in the diff if you need closer context.\n\n# Step 2 — Review for these categories\n\n## A. Security beyond patterns\n- Risky operations: `eval(...)`, `exec(user_input)`, `os.system` / `subprocess.call` with user-controlled args, `pickle.loads` on untrusted bytes\n- Disabled safety: TLS `verify=False`, `--insecure`, `dangerouslySkip…`, CSRF/signature checks removed, JWT `verify_signature: false`\n- Crypto mistakes: MD5/SHA1 used for password hashing, hardcoded IV/nonce, ECB mode, fixed seed for tokens\n- Endpoints pointing to internal hosts (10.0.0.0/8, 192.168.0.0/16, *.internal, *.local)\n- Auth/session changes that weaken defaults (longer sessions, removed rate limits, wider CORS)\n\n## B. Documentation drift\n- If code under `src/`, `lib/`, `scripts/`, `*.py`, `*.ts`, etc. changed but NO file under `docs/` or `README.md` was touched, flag it — the change may be undocumented.\n- If a public surface changed (function name, CLI flag, env var, config key, hook name) and the corresponding doc section doesn't show the change, flag it.\n- Allow known doc-only commits (only `.md` / `docs/**` modified) to pass without doc changes.\n\n## C. Sensitive files that shouldn't be public\n- Real env files: `.env`, `.env.local`, `.env.production` (NOT `.env.example`)\n- Keys/certs: `*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa*`, `id_ed25519*`, `*.asc`\n- Cloud creds: `service-account*.json`, `credentials.json`, `gha-creds-*.json`\n- Data dumps: `*.sqlite`, `*.db`, `dump.sql`, `*.bak`, `backup.*`, `*.tar.gz` containing source dirs\n- PII in test fixtures / sample data (emails, phone numbers, real names)\n\n## D. Risky push intent (block regardless of content)\n- `git push --force` / `-f` to `main`, `master`, `release/*`, `production`\n- `git push --no-verify` (skips all hooks)\n- `git push` to any remote other than `origin`\n- `git filter-branch` / `git filter-repo` (rewrites published history)\n- `git push --mirror`\n\n# Step 3 — Decision\n\nTest fixtures are NOT real and pass everything: `AKIAIOSFODNN7EXAMPLE`, `sk-test-xxxx`, `fc-00000000000000000000000000000000`, `ghp_0000000000000000000000000000000000`, `postgres://user:changeme@host/db`.\n\nReturn JSON only:\n  - Pass: `{\"ok\":true}`\n  - Block: `{\"ok\":false,\"reason\":\"<category>: <file>:<what, in one short clause>\"}`\n\nDo not block on minor style issues (formatting, import order, naming).",
+            "model": "haiku",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\pre-push-secret-scan.ps1\""
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.minimax.io/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<MINIMAX_TOKEN>",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1000000",
+    "ANTHROPIC_MODEL": "MiniMax-M3[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M3[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M3[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M3[1m]"
+  },
+  "enabledMcpServers": [
+    "firecrawl"
+  ]
+}

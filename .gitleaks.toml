@@ -1,0 +1,82 @@
+# gitleaks configuration for the pre-push secret scan hook.
+# Extends the default rule set (https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml)
+# with project-specific patterns. The hook in .claude/settings.json runs
+# `gitleaks git . --log-opts <push-range>` before any `git push`.
+#
+# Why we extend instead of replacing:
+#   - useDefault = true keeps ~150 built-in rules covering AWS, GCP, GitHub,
+#     Stripe, OpenAI, generic-api-key, generic-password, etc.
+#   - Below we add patterns for DB connection strings, PEM private keys,
+#     JWTs, and providers the default set doesn't cover (Firecrawl,
+#     MiniMax/Anthropic-compatible routers).
+
+title = "claude-code-setup gitleaks config"
+
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------------------
+# Allowlist — paths and patterns we accept.
+# --------------------------------------------------------------------
+# `.claude/settings.json` is the Claude Code hook config. The PreToolUse
+# prompt hook lists example secret fixtures so the model knows what NOT to
+# flag (`AKIAIOSFODNN7EXAMPLE`, `sk-test-xxxx`, `fc-0000…`). Those literal
+# fixtures would otherwise match the rules below — they are documentation,
+# not real secrets. The `.claude/hooks/` directory may contain similar
+# fixture examples in script comments.
+# --------------------------------------------------------------------
+[allowlist]
+paths = [
+  '''\.claude/settings\.json$''',
+  '''\.claude/hooks/.*\.ps1$'''
+]
+
+[[rules]]
+id = "firecrawl-api-key"
+description = "Firecrawl API Key"
+regex = '''\bfc-[a-f0-9]{32}\b'''
+tags = ["key", "firecrawl", "third-party"]
+
+[[rules]]
+id = "anthropic-compatible-token"
+description = "Anthropic-compatible provider token (sk-...)"
+regex = '''\bsk-(?:cp-)?[A-Za-z0-9_-]{20,}\b'''
+tags = ["key", "anthropic", "third-party"]
+
+# ---------------------------------------------------------------------------
+# Database / infra connection strings — catch passwords embedded in URLs.
+# These fire regardless of file extension (code, config, .env, .toml, .yaml).
+# ---------------------------------------------------------------------------
+
+# Generic DB DSN: scheme://user:password@host:port/db. The password group
+# accepts URL-encoded chars (`%`, hex) plus common pwd charset.
+[[rules]]
+id = "db-connection-string-with-password"
+description = "Database connection string with embedded password"
+regex = '''\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis|amqp|amqps):\/\/[^\s:@\/]+:([^@\s\/]+)@[^\s\/]+'''
+tags = ["db", "credential", "connection-string"]
+
+# Inline password assignment, broader than the default — accepts any case
+# variable name (DB_PASSWORD, db_password, pwd, ...) and quoted values that
+# include common pwd chars. We require the value to be ≥ 8 chars and have
+# at least one digit or non-alpha to cut noise from empty/short defaults.
+[[rules]]
+id = "generic-password-assignment"
+description = "Generic password / secret assignment"
+regex = '''(?i)\b(?:[a-z_][a-z0-9_]*?)?(?:password|passwd|pwd|secret|token|apikey|api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?secret|auth(?:_token)?)\s*[:=]\s*["']([^"'\s]{8,})["']'''
+entropy = 2.5
+tags = ["credential", "generic"]
+
+# PEM private key blocks — anywhere in any file.
+[[rules]]
+id = "pem-private-key"
+description = "PEM private key block"
+regex = '''-----BEGIN (?:RSA |DSA |EC |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----'''
+tags = ["key", "private-key", "pem"]
+
+# JWT — header.payload.signature with the typical `eyJ...eyJ...` shape.
+[[rules]]
+id = "jwt-token"
+description = "JSON Web Token (JWT)"
+regex = '''\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b'''
+tags = ["token", "jwt"]

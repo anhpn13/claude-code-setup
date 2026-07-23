@@ -1,0 +1,51 @@
+# mise configuration — https://mise.jdx.dev
+# Applies inside this project directory.
+#
+# After cloning this repo, run `mise install` to fetch all tools.
+# Make sure mise is on PATH (see docs/0-init/01-mise.md).
+
+[tools]
+# Python — managed by mise's built-in core backend (python-build).
+python = "3.13"
+
+# Node.js — required by firecrawl-mcp.
+node = "lts"
+
+# Firecrawl MCP server — https://github.com/firecrawl/firecrawl-mcp-server
+# Exposed as the `firecrawl-mcp` binary on PATH. Configure Claude Code
+# via the project-level .mcp.json (committed in this repo).
+"npm:firecrawl-mcp" = "latest"
+
+# uv — fast Python package manager. mise's pipx backend runs
+# `uv tool install` under the hood when uv is available.
+uv = "latest"
+
+# Docling — local document parser (PDF/DOCX/PPTX/XLSX/images -> Markdown).
+# Used by the `read-doc` skill (.claude/skills/read-doc). Isolated install
+# via the pipx backend. Heavy: pulls PyTorch; first PDF parse also downloads
+# models to ~/.cache/docling/models. The `easyocr` extra enables OCR for
+# scanned PDFs/images (supports Vietnamese).
+"pipx:docling" = { version = "latest", extras = "easyocr" }
+
+# gitleaks — secret scanner. Used by the `pre-push-credentials-check` hook
+# (.claude/settings.json → PreToolUse matcher "Bash"). Single Go binary,
+# no runtime dependencies. Rule set updated per release by the gitleaks team
+# so we don't hand-roll regex.
+# https://github.com/gitleaks/gitleaks
+"aqua:gitleaks/gitleaks" = "latest"
+
+# GitHub CLI — official `gh` command. Used to authenticate git pushes
+# against github.com (e.g. `gh auth login`, `gh auth setup-git`).
+# https://cli.github.com — distributed as a single binary via the github
+# backend (replaces deprecated ubi), which downloads the Windows release.
+"github:cli/cli" = "latest"
+
+[env]
+# Automatically creates and activates Python virtual environment at .venv
+_.python.venv = { path = ".venv", create = true }
+
+# Auto-load variables from a local .env file (gitignored). The .env file
+# overrides nothing here unless the same key exists in both — the file
+# wins because it is loaded after the static entries below. Use this to
+# keep real tokens (Anthropic, GitHub, ...) out of committed config.
+_.file = ".env"
