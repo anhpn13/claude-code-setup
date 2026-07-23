@@ -99,6 +99,31 @@ Màn hình sẽ hiển thị giao diện trợ giúp của Firecrawl MCP CLI:
    ```
 3. Màn hình sẽ liệt kê các MCP Servers đang active. Xác nhận server `firecrawl` hiển thị ở trạng thái **Connected**.
 
+> [!IMPORTANT]
+> **MCP báo `firecrawl` disconnected mặc dù mọi thứ đúng?** Nguyên nhân phổ biến nhất: `${FIRECRAWL_API_KEY}` trong `.mcp.json` chỉ thay thế được nếu biến này có trong env của **process Claude Code** — và process đó kế thừa env từ shell cha. Mặc định shell **không tự load `.env`**; chỉ khi `mise` đang **active** (qua `mise activate` hoặc `mise exec`) thì khai báo `_.file = ".env"` trong `mise.toml` mới có hiệu lực.
+>
+> **Fix nhanh — không cần đụng profile:**
+> ```bash
+> mise exec -- claude
+> ```
+> `mise exec` áp dụng toàn bộ `[env]` từ `mise.toml` (kể cả `_.file = ".env"`) cho process con, rồi chạy `claude`. Đây là cách gọn nhất cho fresh install.
+>
+> **Hoặc — activate mise trong shell rồi gõ `claude` bình thường** (xem [`docs/0-init/01-mise.md` § 2.3](../../0-init/01-mise.md)):
+> ```powershell
+> # PowerShell
+> mise activate pwsh | Out-String | Invoke-Expression
+> ```
+> ```bash
+> # bash / zsh
+> eval "$(mise activate bash)"   # hoặc: eval "$(mise activate zsh)"
+> ```
+>
+> Kiểm tra nhanh key đã có trong shell chưa:
+> ```bash
+> echo "$FIRECRAWL_API_KEY"   # hoặc: $env:FIRECRAWL_API_KEY trên PowerShell
+> ```
+> Rỗng → `.env` chưa được load → dùng `mise exec -- claude`.
+
 ---
 
 ## 🔗 5. Tài Liệu Tham Khảo (References)

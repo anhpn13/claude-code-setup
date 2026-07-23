@@ -55,6 +55,8 @@ irm https://claude.ai/install.ps1 | iex
 
 Sau đó vào từng file tài liệu theo thứ tự dưới đây — mỗi file xong thì quay lại đây đánh dấu ✅.
 
+> 💡 **MCP `firecrawl` báo disconnected sau khi `mise install`?** Thường là shell chưa load `.env` — xem [`docs/1-customize/01-mcp.md`](docs/1-customize/01-mcp.md) § 4, cách gọn nhất là `mise exec -- claude`.
+
 ---
 
 ## 🗺 Lộ Trình Học
@@ -75,6 +77,7 @@ Repo chia tài liệu thành 3 phần, đọc theo thứ tự:
 | :--- | :--- | :--- |
 | [`00-mise.md`](docs/1-customize/00-mise.md) | Hiểu sâu hơn về mise: backend, env, scoped tools | ☐ |
 | [`01-mcp.md`](docs/1-customize/01-mcp.md) | MCP server (Firecrawl) — cổng kết nối AI ↔ dịch vụ ngoài | ☐ |
+| [`02-demo-server.md`](docs/1-customize/02-demo-server.md) | Kết nối Petstore API + SSH-qua-wstunnel demo server, chạy toàn bộ qua `mise run` | ☐ |
 
 ### Phần 3 — `docs/2-core/` (4 cơ chế lõi của Claude Code)
 
