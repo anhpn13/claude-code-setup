@@ -1,17 +1,17 @@
 # Claude Code — Setup Mẫu Cho Khoá Học
 
-Repo này là **môi trường chuẩn bị sẵn** để học và làm việc với Claude Code trên Windows: mọi tool cần thiết (mise, Python, Node, Docling, Firecrawl MCP, **gitleaks**) đều khai báo trong `mise.toml` — chỉ cần `mise install` là có đủ. Bên trong còn có sẵn:
+Repo này là **môi trường chuẩn bị sẵn** để học và làm việc với Claude Code — chạy được trên **Windows, macOS và Linux**: mọi tool cần thiết (mise, Python, Node, Docling, Firecrawl MCP, **gitleaks**) đều khai báo trong `mise.toml` — chỉ cần `mise install` là có đủ. Hook bảo mật cũng viết bằng Python (cross-platform) thay vì shell script riêng cho từng OS. Bên trong còn có sẵn:
 
 - **Skill** `read-doc` đọc PDF/Word/Excel bằng Docling (chạy local, có cache).
 - **Agent** `researcher` chuyên research chuyên sâu bằng Firecrawl.
-- **Hook** `pre-push-credentials-check` chặn `git push` nếu diff có lộ secret — **2 lớp song song**: `gitleaks` (pattern-based, deterministic) + agent subagent (Haiku, context-aware, đọc diff bằng Bash). Xem [`docs/2-core/05-HOOKS.md`](docs/2-core/05-HOOKS.md) § 5.
+- **Hook** `pre-push-credentials-check` chặn `git push` nếu diff có lộ secret — **2 lớp song song**: `gitleaks` (pattern-based, deterministic, chạy qua script Python cross-platform) + agent subagent (Haiku, context-aware, đọc diff bằng Bash). Xem [`docs/2-core/05-HOOKS.md`](docs/2-core/05-HOOKS.md) § 5.
 - Tài liệu học tập theo lộ trình: **init → customize → core**.
 
 ---
 
 ## 🛠️ Chuẩn Bị Môi Trường (Bắt Buộc Trước Khi Bắt Đầu)
 
-> Yêu cầu tối thiểu: **Windows 10/11**, PowerShell 5.1+ (có sẵn) hoặc PowerShell 7+ (khuyến nghị), kết nối Internet.
+> Yêu cầu tối thiểu: **Windows 10/11**, **macOS 13+**, hoặc **Linux** (Ubuntu 20.04+/Debian 10+/Alpine 3.19+), kết nối Internet. Terminal dùng được: PowerShell/CMD (Windows), Terminal.app/iTerm2 (macOS), hoặc Bash/Zsh bất kỳ (Linux).
 
 Học viên cần cài **3 thứ theo thứ tự** trước khi làm bất kỳ bài nào trong repo:
 
@@ -29,6 +29,19 @@ Học viên cần cài **3 thứ theo thứ tự** trước khi làm bất kỳ 
 
 > Yêu cầu: đã hoàn thành 3 mục ở [§ Chuẩn Bị Môi Trường](#️-chuẩn-bị-môi-trường-bắt-buộc-trước-khi-bắt-đầu).
 
+**macOS / Linux (bash, zsh):**
+```bash
+# 1. Mở terminal tại thư mục repo này
+cd claude-code-setup
+
+# 2. Cài đặt mọi tool đã khai báo trong mise.toml
+mise install
+
+# 3. (Tuỳ chọn) cài Claude Code CLI nếu máy chưa có
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+**Windows (PowerShell):**
 ```powershell
 # 1. Mở terminal tại thư mục repo này
 cd claude-code-setup
@@ -52,7 +65,7 @@ Repo chia tài liệu thành 3 phần, đọc theo thứ tự:
 
 | File | Nội dung | ✅ |
 | :--- | :--- | :--- |
-| [`00-claude-code.md`](docs/0-init/00-claude-code.md) | Cài Claude Code CLI trên Windows | ☐ |
+| [`00-claude-code.md`](docs/0-init/00-claude-code.md) | Cài Claude Code CLI (Windows / macOS / Linux) | ☐ |
 | [`01-claude-code-minimax.md`](docs/0-init/01-claude-code-minimax.md) | Cấu hình chạy qua MiniMax provider (thay vì Anthropic trực tiếp) | ☐ |
 | [`01-mise.md`](docs/0-init/01-mise.md) | Cài mise — quản lý mọi runtime cho repo | ☐ |
 
@@ -84,7 +97,7 @@ claude-code-setup/
 │   ├── settings.json           # khai hook (PreToolUse cho git push — agent + gitleaks)
 │   ├── settings.local.json     # cá nhân (MCP enabled list, gitignored)
 │   ├── agents/researcher.md    # subagent research chuyên sâu
-│   ├── hooks/                  # script PowerShell cho command hook (pre-push-secret-scan.ps1)
+│   ├── hooks/                  # script Python cross-platform cho command hook (pre-push-secret-scan.py)
 │   └── skills/read-doc/        # skill đọc PDF/DOCX/PPTX/XLSX bằng Docling
 ├── docs/                       # tài liệu khoá học (xem lộ trình ở trên)
 ├── reference-docs/             # file mẫu để test skill read-doc

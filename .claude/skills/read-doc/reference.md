@@ -60,21 +60,22 @@ Cú pháp: `docling <file-hoặc-url> [OPTIONS]` (mặc định đã là convert
 - Lần parse **PDF/ảnh** đầu tiên, Docling tự tải model (layout, tableformer, OCR...) từ Hugging Face về `~/.cache/docling/models`. DOCX/PPTX/HTML **không cần model** — parse được ngay không cần mạng.
 - Tải trước (chuẩn bị lớp học, máy hạn chế mạng):
   ```bash
-  docling-tools models download            # bộ mặc định
-  docling-tools models download -o D:\models  # chỉ định thư mục
+  docling-tools models download                # bộ mặc định
+  docling-tools models download -o /path/to/models  # chỉ định thư mục (macOS/Linux)
+  docling-tools models download -o D:\models        # chỉ định thư mục (Windows)
   ```
-- Trỏ model local: `docling --artifacts-path "D:\models" file.pdf` hoặc đặt biến môi trường `DOCLING_ARTIFACTS_PATH`.
+- Trỏ model local: `docling --artifacts-path /path/to/models file.pdf` (hoặc `docling --artifacts-path "D:\models" file.pdf` trên Windows) hoặc đặt biến môi trường `DOCLING_ARTIFACTS_PATH`.
 
 ## 6. Xử lý sự cố
 
 | Triệu chứng | Nguyên nhân / cách xử lý |
 | :--- | :--- |
-| `docling` not found | Chưa `mise install`, hoặc PowerShell chưa kích hoạt mise → mở lại terminal tại thư mục dự án. |
+| `docling` not found | Chưa `mise install`, hoặc shell hiện tại chưa activate mise (PowerShell/Bash/Zsh) → mở lại terminal tại thư mục dự án. |
 | Lần đầu parse PDF rất lâu | Đang tải model từ Hugging Face — bình thường. Tải trước bằng `docling-tools models download`. |
 | PDF scan ra Markdown rỗng/thiếu chữ | OCR chưa chạy đúng: kiểm tra đã cài extra `easyocr` (mise.toml của repo đã có); thử `--force-ocr` và `--ocr-lang vi,en`. |
 | PDF digital parse quá chậm | Thêm `--no-ocr` (OCR mặc định bật). |
 | `.doc`/`.ppt`/`.xls` đời cũ lỗi | Docling cần LibreOffice cho định dạng legacy → convert sang docx/pptx trước, hoặc cài LibreOffice. |
-| Máy Windows không GPU, parse chậm | Bình thường với `--device cpu`; giảm kỳ vọng hoặc tăng `--num-threads`. |
+| Máy không GPU (mọi OS), parse chậm | Bình thường với `--device cpu`; giảm kỳ vọng hoặc tăng `--num-threads`. |
 | File đã sửa nhưng vẫn ra nội dung cũ | Không thể xảy ra theo thiết kế (cache theo hash nội dung) — nếu gặp, chạy script với `--force` và báo lại. |
 
 ## 7. Nguồn tham khảo

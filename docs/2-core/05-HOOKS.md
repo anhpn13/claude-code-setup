@@ -112,7 +112,7 @@ Trước mỗi `git push`, cần đảm bảo không có secret lọt vào diff.
 
 | Lớp | Loại hook | Vai trò | Catch được gì? |
 | :--- | :--- | :--- | :--- |
-| **1. Scanner pattern** | `command` (PowerShell + gitleaks) | Fast-fail, deterministic, chạy cả khi gọi `git push` ngoài Claude Code | AWS key (`AKIA…`), GitHub PAT (`ghp_…`), Stripe, OpenAI, DB connection string có password, generic password=…, PEM key, JWT, và mọi rule có sẵn trong `.gitleaks.toml` |
+| **1. Scanner pattern** | `command` (Python + gitleaks — chạy được trên Windows/macOS/Linux) | Fast-fail, deterministic, chạy cả khi gọi `git push` ngoài Claude Code | AWS key (`AKIA…`), GitHub PAT (`ghp_…`), Stripe, OpenAI, DB connection string có password, generic password=…, PEM key, JWT, và mọi rule có sẵn trong `.gitleaks.toml` |
 | **2. Reviewer context** | `agent` (Haiku subagent, có Bash tool) | Đọc diff thật bằng `git log -p @{u}..HEAD`, hiểu ngữ nghĩa (test fixture vs secret thật, nội dung thay đổi, push intent) | Secret đặt trong field không chuẩn (vd `auth_string` thay vì `password`); host nội bộ (`*.internal`, `10.0.0.0/8`); credential trong file `config/prod*`; push force sang nhánh shared; thiếu cập nhật docs khi API đổi |
 
 Cả 2 chạy **song song** trong cùng 1 PreToolUse event. Quyết định hạn chế nhất thắng: chỉ cần 1 trong 2 block là push bị huỷ.
@@ -134,7 +134,7 @@ Cả 2 chạy **song song** trong cùng 1 PreToolUse event. Quyết định hạ
           },
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\pre-push-secret-scan.ps1\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-push-secret-scan.py\""
           }
         ]
       }
@@ -147,37 +147,42 @@ Cả 2 chạy **song song** trong cùng 1 PreToolUse event. Quyết định hạ
 - `matcher: "Bash"` — PreToolUse hook kích hoạt cho **mọi** Bash tool call. Agent subagent sẽ tự quyết định command này có phải `git push` hay không dựa trên `$ARGUMENTS`.
 - 2 hook con chạy **song song** — Claude không có cú pháp "chỉ chạy hook 2 khi hook 1 fail". Cả 2 luôn chạy.
 - Agent hook dùng `model: "haiku"` — nhanh nhất, rẻ nhất trong các alias.
-- Command hook gọi script PowerShell `.claude/hooks/pre-push-secret-scan.ps1` qua biến `$CLAUDE_PROJECT_DIR` (đường dẫn tuyệt đối, không phụ thuộc cwd).
+- Command hook gọi script Python `.claude/hooks/pre-push-secret-scan.py` qua biến `$CLAUDE_PROJECT_DIR` (đường dẫn tuyệt đối, không phụ thuộc cwd). Script viết bằng Python (không phải shell script/PowerShell) chính vì lý do cross-platform: `python` đã là dependency bắt buộc của repo (khai trong `mise.toml`, dùng chung với skill `read-doc`), nên hook chạy giống hệt nhau trên Windows, macOS và Linux mà không cần script riêng cho từng OS.
 
-### 5.3. Script PowerShell (lớp 1)
+### 5.3. Script Python (lớp 1)
 
-`.claude/hooks/pre-push-secret-scan.ps1`:
+`.claude/hooks/pre-push-secret-scan.py`:
 
-```powershell
+```python
 # Đọc payload PreToolUse từ stdin (Claude Code pipe JSON vào đây)
-$payload = [Console]::In.ReadToEnd() | ConvertFrom-Json
+payload = json.load(sys.stdin)
+command = payload.get("tool_input", {}).get("command", "")
 
 # Không phải git push → pass-through (exit 0)
-if ($payload.tool_input.command -notmatch 'git\s+push') { exit 0 }
+if not re.search(r"git\s+push", command):
+    sys.exit(0)
 
 # Setup PATH để gitleaks do mise quản lý có thể resolve được.
-# `mise bin-paths` trả về nhiều đường dẫn phân cách bằng space (PowerShell PATH dùng ;).
-$env:PATH = ((mise bin-paths) -split '\s+') -join [IO.Path]::PathSeparator + $env:PATH
+# `mise bin-paths` trả về nhiều đường dẫn phân cách bằng space; os.pathsep
+# tự chọn đúng ký tự nối PATH cho từng OS (";" trên Windows, ":" trên Unix).
+bin_paths = subprocess.run(["mise", "bin-paths"], capture_output=True, text=True).stdout.split()
+env["PATH"] = os.pathsep.join(bin_paths) + os.pathsep + env.get("PATH", "")
 
 # Tính range sẽ push:
 #   - Có upstream (@{u} tồn tại) → scan các commit kể từ lần push gần nhất
 #   - Initial push (không upstream) → scan toàn bộ tree
-if (git rev-parse --verify '@{u}' 2>$null) {
-  $range = '@{u}..HEAD'
-} else {
-  $range = '--all'
-}
+has_upstream = subprocess.run(["git", "rev-parse", "--verify", "@{u}"], ...).returncode == 0
+log_range = "@{u}..HEAD" if has_upstream else "--all"
 
 # Chạy gitleaks. --exit-code 2 → nếu có leak, exit code 2 (block).
 # --redact ẩn giá trị thật trong output. --no-banner bỏ header info.
-gitleaks git . --log-opts $range --config .gitleaks.toml --redact --no-banner --exit-code 2
-exit $LASTEXITCODE
+proc = subprocess.run(["gitleaks", "git", ".", "--log-opts", log_range,
+                        "--config", ".gitleaks.toml", "--redact", "--no-banner",
+                        "--exit-code", "2"], env=env)
+sys.exit(proc.returncode)
 ```
+
+Xem toàn bộ script tại [`.claude/hooks/pre-push-secret-scan.py`](../../.claude/hooks/pre-push-secret-scan.py).
 
 ### 5.4. Custom rules trong `.gitleaks.toml`
 
@@ -231,7 +236,7 @@ regex = '''\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b'
 [allowlist]
 paths = [
   '''\.claude/settings\.json$''',
-  '''\.claude/hooks/.*\.ps1$'''
+  '''\.claude/hooks/.*\.py$'''
 ]
 ```
 
@@ -359,6 +364,9 @@ done
 
 ### 6.4. Notification khi Claude chờ input
 
+> Ví dụ dưới đây gọi API GUI native của từng OS nên **không cross-platform** — chọn đúng bản cho hệ điều hành bạn dùng (khác với hook `pre-push-credentials-check` ở § 5, vốn dùng Python để chạy giống nhau trên mọi OS).
+
+**Windows (PowerShell):**
 ```json
 {
   "hooks": {
@@ -369,6 +377,44 @@ done
           {
             "type": "command",
             "command": "powershell.exe -Command \"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Claude chờ bạn', 'Claude Code')\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**macOS:**
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude chờ bạn\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Linux (cần `libnotify`/`notify-send`):**
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Claude chờ bạn'"
           }
         ]
       }

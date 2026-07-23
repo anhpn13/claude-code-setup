@@ -16,7 +16,7 @@
           },
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\pre-push-secret-scan.ps1\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-push-secret-scan.py\""
           }
         ]
       }

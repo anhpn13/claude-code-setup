@@ -37,7 +37,8 @@ uv = "latest"
 # GitHub CLI — official `gh` command. Used to authenticate git pushes
 # against github.com (e.g. `gh auth login`, `gh auth setup-git`).
 # https://cli.github.com — distributed as a single binary via the github
-# backend (replaces deprecated ubi), which downloads the Windows release.
+# backend (replaces deprecated ubi), which downloads the release matching
+# the current OS/arch (Windows/macOS/Linux).
 "github:cli/cli" = "latest"
 
 [env]

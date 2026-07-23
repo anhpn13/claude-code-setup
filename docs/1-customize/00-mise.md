@@ -8,13 +8,13 @@ Tài liệu này hướng dẫn chi tiết cách tùy chỉnh cấu hình file `
 
 Trước khi bắt đầu, hãy xác nhận công cụ **Mise** đã được cài đặt và hoạt động bình thường trên máy tính của bạn:
 
-```powershell
-mise --version    # Kiểm tra phiên bản (Ví dụ: 2026.7.11 windows-x64)
+```bash
+mise --version    # Kiểm tra phiên bản (Ví dụ: 2026.7.11 windows-x64 / macos-arm64 / linux-x64)
 mise doctor       # Kiểm tra sức khỏe hệ thống (Báo "No problems found")
 ```
 
 > [!NOTE]
-> Kết quả kiểm tra thực tế trên máy hiện tại:
+> Các lệnh này giống nhau trên Windows, macOS, Linux. Kết quả kiểm tra thực tế trên máy hiện tại:
 > - **Phiên bản**: `2026.7.11 windows-x64`
 > - **Trạng thái**: ✅ `No problems found` (Đã cài đặt thành công và sẵn sàng sử dụng).
 
@@ -52,7 +52,7 @@ _.python.venv = { path = ".venv", create = true }
 > **Tính năng tự động tạo & kích hoạt Virtualenv:**
 > Khai báo `_.python.venv = { path = ".venv", create = true }` trong khối `[env]` mang lại 2 lợi ích lớn:
 > 1. **Tự động khởi tạo**: Khi bạn chạy lệnh `mise install`, Mise sẽ tự động khởi tạo một môi trường ảo `.venv` chuẩn hóa với đúng phiên bản Python được chọn trong `[tools]` mà không cần gõ lệnh `python -m venv .venv`.
-> 2. **Tự động Activate**: Ngay khi bạn `cd` vào thư mục dự án, Mise sẽ tự động kích hoạt môi trường ảo `.venv` này (thêm các đường dẫn binary của `.venv` vào đầu biến `PATH`), loại bỏ hoàn toàn việc phải chạy thủ công lệnh `.\.venv\Scripts\Activate.ps1`.
+> 2. **Tự động Activate**: Ngay khi bạn `cd` vào thư mục dự án, Mise sẽ tự động kích hoạt môi trường ảo `.venv` này (thêm các đường dẫn binary của `.venv` vào đầu biến `PATH`), loại bỏ hoàn toàn việc phải chạy thủ công lệnh activate của venv (`.\.venv\Scripts\Activate.ps1` trên Windows, hoặc `source .venv/bin/activate` trên macOS/Linux).
 
 ---
 
@@ -60,7 +60,7 @@ _.python.venv = { path = ".venv", create = true }
 
 Sau khi cập nhật file `mise.toml`, chạy lệnh sau để tải và cài đặt Node.js, Python cũng như tạo `.venv`:
 
-```powershell
+```bash
 mise install
 ```
 
@@ -74,7 +74,7 @@ mise all tools are installed
 
 Kiểm tra danh sách các công cụ đã được cài đặt và kích hoạt trong dự án:
 
-```powershell
+```bash
 mise ls
 ```
 

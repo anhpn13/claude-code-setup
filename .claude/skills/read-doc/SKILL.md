@@ -25,7 +25,7 @@ allowed-tools: Bash(python ${CLAUDE_SKILL_DIR}/scripts/parse_doc.py *)
 | PDF/ảnh scan tiếng Việt | `--ocr-lang vi,en` |
 | File nguồn đổi nội dung nhưng muốn ép parse lại | `--force` |
 
-PDF luôn dùng backend `pypdfium2` (nhẹ hơn, ổn định hơn backend mặc định của Docling trên Windows).
+PDF luôn dùng backend `pypdfium2` (nhẹ hơn, ổn định hơn backend mặc định của Docling — từng crash trên một số PDF ở Windows nên script chọn cố định backend này cho mọi OS).
 
 ## Quy tắc
 

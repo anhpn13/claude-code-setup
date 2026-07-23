@@ -29,7 +29,7 @@ useDefault = true
 [allowlist]
 paths = [
   '''\.claude/settings\.json$''',
-  '''\.claude/hooks/.*\.ps1$''',
+  '''\.claude/hooks/.*\.py$''',
   '''docs/2-core/05-HOOKS\.md$'''
 ]
 
