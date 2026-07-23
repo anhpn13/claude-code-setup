@@ -55,7 +55,7 @@ Sau khi lệnh chạy hoàn tất, màn hình PowerShell sẽ hiển thị xác 
 Các thông tin quan trọng hiển thị trên màn hình:
 
 - ✅ `✔ Claude Code successfully installed!`: Đã cài đặt thành công.
-- 📌 `Version: 2.1.217` (hoặc phiên bản mới hơn): Phiên bản Claude Code.
+- 📌 `Version: 2.1.218` (hoặc phiên bản mới hơn): Phiên bản Claude Code.
 - 📁 `Location: C:\Users\<Username>\.local\bin\claude.exe`: Vị trí lưu file thực thi.
 
 Để kiểm tra trợ giúp và danh sách câu lệnh, bạn gõ:
@@ -72,8 +72,7 @@ claude --help
 > Sau khi cài xong, nếu bạn gõ `claude` mà gặp thông báo lỗi trên, nguyên nhân là do cửa sổ PowerShell cũ chưa cập nhật biến môi trường `PATH`.
 > 👉 **Cách xử lý**: Bạn chỉ cần **ĐÓNG HẲN** cửa sổ PowerShell hiện tại và **MỞ LẠI** một cửa sổ PowerShell mới.
 
-> [!TIP]
-> Bạn nên kết hợp sử dụng **Claude Code CLI** với **Claude Code Router (CCR)** để chuyển đổi giữa các mô hình AI khác nhau (như DeepSeek, Qwen) giúp tối ưu hóa chi phí! Xem chi tiết tại bài hướng dẫn tiếp theo: [01-claude-code-router.md](./01-claude-code-router.md).
+> Sau khi cài xong Claude Code CLI, bước tiếp theo là trỏ nó về model provider bạn muốn dùng (MiniMax, Anthropic API, Bedrock, v.v.) — xem [01-claude-code-minimax.md](./01-claude-code-minimax.md) nếu bạn dùng MiniMax của khóa học.
 
 ---
 

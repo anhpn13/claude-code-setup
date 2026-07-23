@@ -9,9 +9,25 @@ Repo này là **môi trường chuẩn bị sẵn** để học và làm việc 
 
 ---
 
+## 🛠️ Chuẩn Bị Môi Trường (Bắt Buộc Trước Khi Bắt Đầu)
+
+> Yêu cầu tối thiểu: **Windows 10/11**, PowerShell 5.1+ (có sẵn) hoặc PowerShell 7+ (khuyến nghị), kết nối Internet.
+
+Học viên cần cài **3 thứ theo thứ tự** trước khi làm bất kỳ bài nào trong repo:
+
+| # | Công cụ | Cần cho | Thời gian | Hướng dẫn cài |
+| :---: | :--- | :--- | :---: | :--- |
+| 1️⃣ | **Claude Code CLI** | Công cụ chính để chạy agent trong terminal | ~2 phút | [`docs/0-init/00-claude-code.md`](docs/0-init/00-claude-code.md) |
+| 2️⃣ | **Mise** | Quản lý mọi runtime (Python, Node, gitleaks, gh, docling…) qua `mise.toml` — chỉ cần `mise install` là đủ | ~3 phút | [`docs/0-init/01-mise.md`](docs/0-init/01-mise.md) |
+| 3️⃣ | **API key MiniMax** *(hoặc Anthropic)* | Để Claude Code gọi model — set qua env trong `.claude/settings.json` | ~2 phút | [`docs/0-init/01-claude-code-minimax.md`](docs/0-init/01-claude-code-minimax.md) |
+
+**Sau khi cài xong 3 thứ trên, quay lại đây chạy tiếp 3 bước dưới.**
+
+---
+
 ## 🚀 Bắt Đầu Nhanh (3 Bước)
 
-> Yêu cầu: Windows 10/11, đã cài [mise](https://mise.jdx.dev/getting-started.html) (xem [`docs/0-init/01-mise.md`](docs/0-init/01-mise.md)).
+> Yêu cầu: đã hoàn thành 3 mục ở [§ Chuẩn Bị Môi Trường](#️-chuẩn-bị-môi-trường-bắt-buộc-trước-khi-bắt-đầu).
 
 ```powershell
 # 1. Mở terminal tại thư mục repo này
