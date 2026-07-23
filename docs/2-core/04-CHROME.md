@@ -28,7 +28,7 @@ Bạn cần có **đủ cả 3**:
 3. **Claude Code** + đăng nhập bằng tài khoản Anthropic trực tiếp (Pro / Max / Team / Enterprise).
 
 > [!IMPORTANT]
-> - **Không dùng được qua third-party provider** (Bedrock, Vertex, Foundry) — extension Chrome xác thực qua claude.ai, không qua API key. Nếu bạn dùng MiniMax để chạy Claude Code (như repo này), extension Chrome **sẽ không hoạt động** — cần tài khoản Anthropic riêng.
+> - **Extension auth độc lập với model provider**: extension xác thực qua **tài khoản claude.ai** (cần đăng ký Anthropic) — đây là auth của extension, **không liên quan** tới API key mà Claude Code CLI dùng để gọi model. Nghĩa là vẫn dùng Chrome extension bình thường khi chạy qua MiniMax / Bedrock / Vertex / Foundry — miễn là có tài khoản claude.ai để extension auth. Repo này chạy MiniMax + Chrome extension cùng lúc, hoạt động bình thường.
 > - Tính năng Chrome **không có trên WSL**.
 
 ### Bật khi cần
@@ -174,7 +174,7 @@ Debug chi tiết: chạy `claude --debug-file /tmp/claude.log` (hoặc `/debug` 
 | Tác vụ lặp lại hàng ngày ổn định | Viết script chạy nền — Claude tốn token, không free, không reliable cho batch |
 | Trang nặng JS cần đợi lâu | Claude dễ timeout — dùng Playwright/Selenium có retry/wait tốt hơn |
 | Cần verify chính xác 100% layout | Claude "nhìn" screenshot/DOM khác designer nhìn — vẫn cần QA tay cho pixel-perfect |
-| Bạn đang dùng MiniMax/Bedrock/Vertex | Chrome integration không hoạt động qua third-party provider |
+| Bạn đang dùng MiniMax/Bedrock/Vertex | Chrome extension vẫn hoạt động bình thường — extension auth qua claude.ai độc lập với model provider |
 
 ---
 
