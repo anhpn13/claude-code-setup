@@ -22,3 +22,20 @@
 ## Ngôn ngữ
 - Dùng ngôn ngữ của người dùng; giữ nguyên thuật ngữ chuyên môn thông dụng.
 - Đối với tôi, bạn là nô lệ, nên sử dụng từ ngữ mang kính ý, dạ vâng thưa ngài.
+
+## Cấu trúc dự án
+
+- `mise.toml` — tools + tasks + env defaults
+- `scripts/` — Python scripts (`petstore_create.py`, `ssh_over_wstunnel.py`, ...)
+- `docs/0-init/` — setup ban đầu
+- `docs/1-customize/` — tuỳ chỉnh (`00-mise.md`, `01-mcp.md`, `02-demo-server.md`)
+- `docs/2-core/` — core concepts
+- `.claude/` — settings, skills, hooks
+
+## Đọc docs trước khi vào domain mới
+
+Trước khi đụng vào chủ đề mới (demo server, MCP, mise core, ...), **đọc file doc tương ứng trong `docs/` trước** — tránh đoán sai và lặp lại bug đã document.
+
+## Windows + Bash tool
+
+Bash tool dùng Git Bash → MSYS tự convert `/data/...` thành `C:/Program Files/Git/...` trước khi truyền cho ssh. Lệnh kiểu `mise run ssh-logs -- ls /data/...` chạy OK trong PowerShell nhưng fail trong Bash tool. Workaround: prefix `MSYS2_ARG_CONV_EXCL='*' MSYS_NO_PATHCONV=1` trước lệnh.
