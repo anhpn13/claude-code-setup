@@ -1,6 +1,44 @@
 # ⚙️ Hướng Dẫn Cấu Hình Kết Nối MiniMax API Cho Claude Code
 
-Tài liệu này hướng dẫn chi tiết cho **người mới bắt đầu** từng bước cấu hình **MiniMax API** cho công cụ **Claude Code CLI** bằng cách thiết lập trực tiếp file `.claude/settings.json`.
+Tài liệu này hướng dẫn chi tiết cho **người mới bắt đầu** từng bước cấu hình **MiniMax API** cho công cụ **Claude Code CLI**. Có 2 cách — chọn cách bạn đang dùng:
+
+| Cách | Khi nào chọn |
+| :--- | :--- |
+| **A. Ghi vào `.env` (khuyến nghị)** | Bạn chạy qua `mise exec -- claude` (đã cài mise + `mise install` xong). Đây là cách chuẩn của repo này — `.env` được mise auto-load, mọi `mise exec`/`mise run` đều thấy env. |
+| **B. Ghi vào `.claude/settings.json`** | Bạn chạy `claude` trực tiếp từ terminal (không qua mise). Cách cũ vẫn hoạt động nhưng **rải secret ra 2 nơi** — không khuyến nghị. |
+
+---
+
+## A. Cách nhanh — ghi vào `.env` (qua mise)
+
+Vì repo này đã có sẵn `mise.toml` với `_.file = ".env"`, khi bạn chạy
+`mise exec -- claude` (hoặc `mise run`), mise tự động load `.env` và
+truyền tất cả biến trong đó vào Claude Code. Bạn chỉ cần:
+
+```powershell
+# Từ thư mục repo, PowerShell:
+Add-Content .env "`nANTHROPIC_BASE_URL=https://api.minimax.io/anthropic"
+Add-Content .env "`nANTHROPIC_AUTH_TOKEN=<MINIMAX_TOKEN_CUA_BAN>"
+
+# Xác nhận mise thấy 2 biến:
+mise env | Select-String -Pattern '^ANTHROPIC_'
+# (chỉ in tên key, KHÔNG lộ giá trị token)
+
+# Khởi động Claude Code qua mise:
+mise exec -- claude
+```
+
+> [!TIP]
+> **Vì sao cách này tốt hơn `.claude/settings.json`?**
+> 1. **Một nơi duy nhất** chứa secret — `.env` đã được `.gitignore` và
+>    dùng chung cho tất cả tool (Firecrawl, GitHub, Anthropic, Petstore, ...).
+> 2. **Tránh leak vào git** — `.env` không bao giờ được commit, không
+>    cần lo lỡ tay `git add .claude/`.
+> 3. **Không cần bypass hook** — không bị `gitleaks` quét trên push vì
+>    token không nằm trong tracked file.
+>
+> So sánh: `.env.example` (đã commit) liệt kê *tên biến* + hướng dẫn
+> để user khác tự copy sang `.env`.
 
 ---
 

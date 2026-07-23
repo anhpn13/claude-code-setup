@@ -2,3 +2,15 @@
 .venv
 .env
 .claude/settings.local.json
+
+# Python — bỏ mọi __pycache__/ ở bất kỳ đâu (kể cả trong .claude/hooks/)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Artifacts kéo về từ server demo (vd. `scp`-style copy log qua SSH).
+# Trống lúc đầu, nhưng reserve path để `mkdir demo-logs` không bị git complain.
+demo-logs/
+
+# Git worktree isolation (.claude/worktrees/ là working tree của agent, không tracked).
+.claude/worktrees/

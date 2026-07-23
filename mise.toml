@@ -28,9 +28,9 @@ uv = "latest"
 "pipx:docling" = { version = "latest", extras = "easyocr" }
 
 # gitleaks — secret scanner. Used by the `pre-push-credentials-check` hook
-# (.claude/settings.json → PreToolUse matcher "Bash"). Single Go binary,
-# no runtime dependencies. Rule set updated per release by the gitleaks team
-# so we don't hand-roll regex.
+# (.claude/settings.json → PreToolUse wrapper triggers only on `git push`).
+# Single Go binary, no runtime dependencies. Rule set updated per release
+# by the gitleaks team so we don't hand-roll regex.
 # https://github.com/gitleaks/gitleaks
 "aqua:gitleaks/gitleaks" = "latest"
 
@@ -41,7 +41,52 @@ uv = "latest"
 # the current OS/arch (Windows/macOS/Linux).
 "github:cli/cli" = "latest"
 
+# wstunnel — WebSocket tunnel client used by the demo SSH task
+# (see scripts/ssh_over_wstunnel.py and docs/1-customize/02-demo-server.md).
+# Each release ships one archive per OS/arch, so auto-detect can't pick
+# the right one. Pin via matching_regex so Linux/macOS/Windows all resolve.
+# https://github.com/erebe/wstunnel
+"github:erebe/wstunnel" = {
+  version = "latest",
+  matching_regex = '^wstunnel_\d+\.\d+\.\d+_(linux_amd64|linux_arm64|darwin_amd64|darwin_arm64|windows_amd64)\.tar\.gz$',
+}
+
+[tasks]
+# --------------------------------------------------------------------------
+# petstore-create — POST a Pet to the public Petstore demo server.
+# Header `X-Student-Id` is sourced from $PETSTORE_STUDENT_ID (loaded from
+# .env by `_.file` below) or overridden with --student-id.
+#
+# Usage:
+#   mise run petstore-create
+#   mise run petstore-create --student-id=nguyen-anh
+# --------------------------------------------------------------------------
+petstore-create = { run = [
+  "uv run python scripts/petstore_create.py --student-id {{ env.PETSTORE_STUDENT_ID }}",
+], description = "POST một Pet lên server demo (cần X-Student-Id)" }
+
+# --------------------------------------------------------------------------
+# ssh-logs — SSH through wstunnel to the demo server and run a command.
+# Empty-password flow is handled via SSH_ASKPASS (cross-platform).
+# Retries up to 5 times on transient 404/RST from VM public-proxy
+# (10.15.94.54 — known issue, kiến trúc v2 passthrough).
+#
+# Usage:
+#   mise run ssh-logs -- ls /data/petstore-logs
+#   mise run ssh-logs -- uname -a
+# --------------------------------------------------------------------------
+ssh-logs = { run = [
+  "uv run python scripts/ssh_over_wstunnel.py --student-id {{ env.PETSTORE_STUDENT_ID }} --",
+], description = "SSH qua wstunnel tới server demo và chạy lệnh từ xa" }
+
 [env]
+# Default endpoint cho demo server — override trong `.env` khi cần.
+PETSTORE_BASE_URL = "https://petstore-ai-course-demo.sandbox.vnpt-technology.vn:9443/api/v3"
+PETSTORE_WSS_URL  = "wss://passthrough-ai-course-demo-ssh.sandbox.vnpt-technology.vn:9443"
+PETSTORE_SSH_HOST = "localhost"
+PETSTORE_SSH_PORT = "2222"
+PETSTORE_SSH_USER = "student"
+
 # Automatically creates and activates Python virtual environment at .venv
 _.python.venv = { path = ".venv", create = true }
 

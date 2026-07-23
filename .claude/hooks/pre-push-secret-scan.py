@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Pre-push secret scanner hook (cross-platform: Windows/macOS/Linux).
-
-Reads the PreToolUse payload from stdin; only acts when the Bash command is a
-`git push`. Sets up mise-managed PATH so `gitleaks` resolves, then runs
-`gitleaks git` over the push range. Exit 2 blocks the push (findings found),
-exit 0 lets it through (clean scan or non-push command).
+"""
+Pre-push secret scanner — đọc PreToolUse payload từ stdin (JSON).
+Scan secret khi (và chỉ khi) Bash command chứa "git push"; mọi lệnh
+khác → exit 0 ngay, không tốn LLM token.
 """
 
 import json
@@ -16,35 +14,32 @@ import sys
 
 
 def main() -> int:
-    payload = json.load(sys.stdin)
+    try:
+        payload = json.load(sys.stdin)
+    except (json.JSONDecodeError, EOFError):
+        # Không phải PreToolUse → skip.
+        return 0
+
     command = payload.get("tool_input", {}).get("command", "")
-    if not re.search(r"git\s+push", command):
+    if not re.search(r"\bgit\s+push\b", command):
         return 0
 
     env = os.environ.copy()
-
-    # `mise bin-paths` prints space-separated dirs on one line. Prepend each
-    # to PATH so gitleaks/git installed by mise resolve without needing the
-    # shell's own activation hook to have run.
     mise = shutil.which("mise")
     if mise:
-        bin_paths = subprocess.run(
-            [mise, "bin-paths"], capture_output=True, text=True
-        ).stdout.split()
+        out = subprocess.run([mise, "bin-paths"], capture_output=True, text=True)
+        bin_paths = out.stdout.split()
         if bin_paths:
             env["PATH"] = os.pathsep.join(bin_paths) + os.pathsep + env.get("PATH", "")
 
     gitleaks = shutil.which("gitleaks", path=env.get("PATH"))
     if gitleaks is None:
         print(
-            "ERROR: `gitleaks` not found on PATH. Run `mise install` in the "
-            "project root, then retry the push.",
+            "ERROR: `gitleaks` not found on PATH. Run `mise install`.",
             file=sys.stderr,
         )
         return 2
 
-    # Has upstream? Scan only commits since the last push. Otherwise
-    # (initial push) scan everything reachable from HEAD.
     has_upstream = (
         subprocess.run(
             ["git", "rev-parse", "--verify", "@{u}"],

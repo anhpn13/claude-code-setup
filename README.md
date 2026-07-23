@@ -158,6 +158,7 @@ git push
 - `.mcp.json` **tham chiếu** `FIRECRAWL_API_KEY` qua `${FIRECRAWL_API_KEY}` — không hardcode giá trị thật trong file. Giá trị thật đặt trong `.env` (gitignored) và `mise` tự load qua `_.file = ".env"` trong `mise.toml`.
 - Nếu muốn rotate key, đổi giá trị trong `.env`, không sửa `.mcp.json`.
 - `.env.example` đi kèm liệt kê các biến cần khai báo — copy sang `.env` rồi fill giá trị.
+- `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (token MiniMax) cũng nằm trong `.env` — xem [docs/0-init/01-claude-code-minimax.md](./docs/0-init/01-claude-code-minimax.md) § A. **Không** đặt trong `.claude/settings.json` (sẽ bị tracked, push lên leak).
 - Hook `pre-push-credentials-check` sẽ **chặn push** cho đến khi diff sạch (cả 2 lớp đều pass). Đây là cố ý.
 
 ---
