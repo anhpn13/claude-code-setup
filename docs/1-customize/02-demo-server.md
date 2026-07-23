@@ -65,53 +65,27 @@ trong `mise.toml`. Đặt 1 lần, cả 2 task bên dưới dùng chung.
 > Hai URL mặc định (`PETSTORE_BASE_URL`, `PETSTORE_WSS_URL`) đã có sẵn
 > trong `mise.toml [env]`. Chỉ override khi server demo chuyển địa chỉ.
 
-### 2.5. ⚠️ Không dùng được khi ngồi trong mạng nội bộ VNPT Technology — dùng 4G/5G để test
-
-> [!WARNING]
-> **Trạng thái (2026-07-24):** khi ngồi trong VPN nội bộ VNPT Technology
-> (máy tính công ty cấp), cả 2 flow đều trả `404` dù script + upstream
-> vẫn sống. Nguyên nhân: DNS adapter của VPN trả `*.sandbox.vnpt-technology.vn`
-> về IP private (`cp-01: 10.15.17.146`) thay vì IP public qua VM
-> `10.15.94.54`. Đi đường nội bộ, route trên cụm chưa map đúng cho
-> tên miền public (ingress chỉ được whitelist cho IP public).
->
-> **Hiện chưa hoạt động** khi dùng mạng nội bộ VNPT Tech — có thể được
-> fix vào **sáng mai**. Trong thời gian chờ fix, **khuyến nghị dùng
-> 4G/5G** (chia sẻ từ điện thoại hoặc USB tethering) khi test.
->
-> Triệu chứng để biết mình đang bị:
->
-> | Dấu hiệu | Nguyên nhân |
-> | :--- | :--- |
-> | `mise run petstore-create` → `FAIL: server trả 404` (mọi lần thử) | Đi qua VPN nội bộ, route ingress chưa map |
-> | `Resolve-DnsName petstore-ai-course-demo.sandbox.vnpt-technology.vn` → trả `10.15.17.146` | DNS VPN override (đáng báo) |
-> | `curl ... -v` thấy `Connected to ... (10.15.17.146)` | Đi đường nội bộ, không qua VM public-proxy |
-
-**Cách xử lý tạm (1 trong 2):**
-
-```powershell
-# Cách A: tắt VPN công ty + dùng 4G/5G (KHUYẾN NGHỊ)
-# Bật 4G trên điện thoại, USB tether với máy, tắt VPN Cisco AnyConnect/...
-# Sau đó chạy lại:
-mise run petstore-create
-mise run ssh-logs -- "tail -3 /data/petstore-logs/access.log"
-
-# Cách B: ép DNS qua 8.8.8.8 (chỉ áp dụng cho 1 phiên terminal,
-# KHÔNG thay đổi adapter mạng hệ thống)
-Resolve-DnsName petstore-ai-course-demo.sandbox.vnpt-technology.vn -Server 8.8.8.8
-#   → phải trả IP public (không phải 10.x.x.x)
-# Rồi dùng IP đó với --resolve trong curl:
-curl --resolve petstore-ai-course-demo.sandbox.vnpt-technology.vn:9443:<IP-PUBLIC> `
-     -i -X POST "https://petstore-ai-course-demo.sandbox.vnpt-technology.vn:9443/api/v3/pet" `
-     -H "Content-Type: application/json" -H "X-Student-Id: nguyen-anh" `
-     -k -d '{"id":111,"name":"probe","photoUrls":[],"status":"available"}'
-```
+### 2.5. ✅ Mạng nội bộ VNPT Technology — đã hoạt động bình thường (cập nhật 2026-07-24)
 
 > [!NOTE]
-> Script `petstore_create.py`/`ssh_over_wstunnel.py` không đụng DNS —
-> chúng dùng resolver của hệ điều hành. Nghĩa là nếu bạn VPN mà không
-> ép DNS, **chạy `mise run ...` sẽ tự động đi đường nội bộ**. Hãy nhớ
-> flag này khi điều tra bug liên quan tới mạng.
+> **Trạng thái mới (2026-07-24):** vấn đề 404 trên VPN nội bộ VNPT
+> Technology (DNS trả IP private `10.15.17.146` thay vì IP public)
+> đã được fix. Khi ngồi trong VPN công ty, cả 2 flow giờ chạy bình
+> thường không cần tắt VPN hay chuyển sang 4G/5G.
+
+> [!TIP]
+> **Nếu vẫn gặp 404 ngẫu nhiên**, đó là bug VM public-proxy `10.15.94.54`
+> (SNI-inspect L4, v2 known issue), KHÔNG phải do VPN — retry `ssh` (xem
+> § 6 Known issue) hoặc chờ vài phút rồi thử lại.
+
+Triệu chứng để biết còn lỗi hay không (chỉ dành cho debug, không cần
+làm theo khi chạy bình thường):
+
+| Dấu hiệu | Ý nghĩa |
+| :--- | :--- |
+| `mise run petstore-create` → `OK (200) sau 1 lần thử` | ✅ Mọi thứ chạy |
+| `Resolve-DnsName petstore-ai-course-demo.sandbox.vnpt-technology.vn` → trả IP public (không phải `10.x.x.x`) | ✅ DNS đúng |
+| `mise run ssh-logs -- uname -a` → in tên kernel | ✅ SSH + wstunnel OK |
 
 ---
 
@@ -419,12 +393,9 @@ mise run ssh-logs -- "grep 'student=nguyen-anh' /data/petstore-logs/access.log |
 Không có URL, header, port, password, retry nào Agent phải tự nhớ.
 
 > [!WARNING]
-> **Cả 2 flow đều cần đường public.** Nếu bạn đang ngồi trong VPN công ty,
-> DNS adapter mạng có thể trả IP private (`cp-01: 10.15.17.146`) thay vì IP
-> public — kết quả là `petstore-create` trả `404` dù upstream vẫn sống.
-> **Tắt VPN** trước khi chạy, hoặc xem chi tiết ở § 2.5 để ép DNS qua
-> `8.8.8.8`. Triệu chứng "qua VPN thì 404, tắt VPN thì 200" đã verify thật
-> (xem § "Đã verify" bên dưới).
+> **Cả 2 flow đều đi được trên VPN nội bộ VNPT Technology** (đã fix
+> 2026-07-24 — xem § 2.5). Nếu còn gặp 404 ngẫu nhiên, đó là VM public-proxy
+> `10.15.94.54` race — retry script tự xử lý, không cần tắt VPN.
 
 ---
 
@@ -434,7 +405,7 @@ Không có URL, header, port, password, retry nào Agent phải tự nhớ.
 | :--- | :--- | :--- |
 | `mise install` | Cài đủ 8 tool trong `mise.toml`, kể cả `wstunnel-cli 10.6.2` qua GitHub release với `matching_regex` cho `windows_amd64`. | Có lỗi phải sửa regex (wstunnel dùng tên file `wstunnel_<ver>_<os-arch>.tar.gz` chứ không phải `wstunnel-v<ver>-<arch>.tar.gz`). Đã fix và đối chiếu lại. |
 | `mise tasks ls` | Liệt kê `petstore-create` + `ssh-logs`. | OK. |
-| `mise run petstore-create` | `OK (200) sau 1 lần thử` qua internet công khai (đã tắt VPN). Khi còn VPN trả `404`, đã xác nhận do DNS qua `cp-01` chứ không phải upstream. | Script không cần retry khi đi đường public; retry vẫn phòng trường hợp upstream tạm giật. |
+| `mise run petstore-create` | `OK (200) sau 1 lần thử` (lần đầu cần retry do VPN nội bộ trả 404 ban đầu; sau khi fix DNS thì 1 phát ăn ngay). | Script không cần retry khi DNS đúng; retry vẫn phòng trường hợp upstream tạm giật hoặc VM public-proxy race. |
 | `mise run ssh-logs -- "tail -5 /data/petstore-logs/access.log"` | Vào pod `student@localhost:2222` qua `wstunnel` self-TLS (passthrough v2) ngay lần đầu, không retry. Đã thấy dòng log: `student=nguyen-anh ... POST /api/v3/pet status=200 body={"id": 6555766467, "name": "nguyen-anh-fluffy-9f186a", ...}`. | Fix `OpenSSH_9.9p1` có sẵn trên Windows + `SSH_ASKPASS=askpass_empty.py` + `askpass=` đã làm việc sạch, không prompt. |
 | `grep 'student=nguyen-anh' ...access.log \| tail -3` | Cô lập đúng dòng của học viên, không lẫn dòng của `verify-final` / `verify2` (probe trước đó). | OK — đã verify cơ chế multi-tenant. |
 
