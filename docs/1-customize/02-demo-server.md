@@ -65,28 +65,6 @@ trong `mise.toml`. Đặt 1 lần, cả 2 task bên dưới dùng chung.
 > Hai URL mặc định (`PETSTORE_BASE_URL`, `PETSTORE_WSS_URL`) đã có sẵn
 > trong `mise.toml [env]`. Chỉ override khi server demo chuyển địa chỉ.
 
-### 2.5. ✅ Mạng nội bộ VNPT Technology — đã hoạt động bình thường (cập nhật 2026-07-24)
-
-> [!NOTE]
-> **Trạng thái mới (2026-07-24):** vấn đề 404 trên VPN nội bộ VNPT
-> Technology (DNS trả IP private `10.15.17.146` thay vì IP public)
-> đã được fix. Khi ngồi trong VPN công ty, cả 2 flow giờ chạy bình
-> thường không cần tắt VPN hay chuyển sang 4G/5G.
-
-> [!TIP]
-> **Nếu vẫn gặp 404 ngẫu nhiên**, đó là bug VM public-proxy `10.15.94.54`
-> (SNI-inspect L4, v2 known issue), KHÔNG phải do VPN — retry `ssh` (xem
-> § 6 Known issue) hoặc chờ vài phút rồi thử lại.
-
-Triệu chứng để biết còn lỗi hay không (chỉ dành cho debug, không cần
-làm theo khi chạy bình thường):
-
-| Dấu hiệu | Ý nghĩa |
-| :--- | :--- |
-| `mise run petstore-create` → `OK (200) sau 1 lần thử` | ✅ Mọi thứ chạy |
-| `Resolve-DnsName petstore-ai-course-demo.sandbox.vnpt-technology.vn` → trả IP public (không phải `10.x.x.x`) | ✅ DNS đúng |
-| `mise run ssh-logs -- uname -a` → in tên kernel | ✅ SSH + wstunnel OK |
-
 ---
 
 ## 3. Flow 1 — Gọi Petstore API
@@ -392,11 +370,6 @@ mise run ssh-logs -- "grep 'student=nguyen-anh' /data/petstore-logs/access.log |
 
 Không có URL, header, port, password, retry nào Agent phải tự nhớ.
 
-> [!WARNING]
-> **Cả 2 flow đều đi được trên VPN nội bộ VNPT Technology** (đã fix
-> 2026-07-24 — xem § 2.5). Nếu còn gặp 404 ngẫu nhiên, đó là VM public-proxy
-> `10.15.94.54` race — retry script tự xử lý, không cần tắt VPN.
-
 ---
 
 ## 7+. Kết quả đã verify thật (cập nhật 2026-07-23)
@@ -411,7 +384,72 @@ Không có URL, header, port, password, retry nào Agent phải tự nhớ.
 
 ---
 
-## 🔗 8. Tài Liệu Tham Khảo
+## 8. Chạy Lệnh Raw Qua `mise exec` (curl & ssh trực tiếp)
+
+Phần này dành cho debug hoặc khi bạn muốn tự tay gọi `curl`/`ssh` thay vì
+qua script (`mise run petstore-create` / `mise run ssh-logs` ở § 3, § 4
+vẫn là cách khuyến nghị cho việc thường ngày — xem lý do ở § 7.3).
+
+`mise exec -- <lệnh>` chạy `<lệnh>` với PATH đã được mise chèn thêm các
+tool trong `[tools]` (ví dụ `wstunnel`) — **không cần `mise.toml` khai
+báo riêng `curl`/`ssh`**: cả hai đến từ hệ điều hành (xem § 2.3) và đã
+nằm sẵn trên PATH, `mise exec` truyền PATH đó qua nguyên vẹn.
+
+> [!NOTE]
+> **Đã thử khai báo `curl`/`ssh` như tool trong `mise.toml`** (giống
+> `wstunnel`) để đồng nhất giữa các máy — nhưng không có nguồn phù hợp:
+> `curl/curl` trên GitHub chỉ phát hành **source code**, không có binary;
+> các bản build binary sẵn (`stunnel/static-curl`, `moparisthebest/static-curl`)
+> chỉ có **Linux**, không có macOS/Windows; backend `pkgx` cũng không có
+> bản Windows cho `curl.se`. OpenSSH tương tự — không có 1 nguồn release
+> duy nhất phủ cả Windows/macOS/Linux như `wstunnel`. Vì `curl` đã có sẵn
+> mặc định trên Windows 10 1803+/macOS/hầu hết Linux, và `ssh` có sẵn trên
+> macOS/Linux (Windows cần bật OpenSSH Client — đã hướng dẫn ở § 2.3),
+> việc thêm vào `mise.toml` sẽ không đồng nhất hơn mà còn có thể lỗi cài
+> đặt trên máy khác. Giữ nguyên: `curl`/`ssh` dùng bản của hệ điều hành.
+
+### 8.1. Raw `curl` — gọi Petstore API
+
+```bash
+mise exec -- curl -sS -k -i -X POST \
+  "$PETSTORE_BASE_URL/pet" \
+  -H "Content-Type: application/json" \
+  -H "X-Student-Id: $PETSTORE_STUDENT_ID" \
+  -d '{"id":20260724,"name":"nguyen-anh-raw-test","photoUrls":[],"status":"available"}'
+```
+
+**Đã verify:** `200 OK` + body JSON trả về đúng pet vừa tạo — tương đương
+kết quả `mise run petstore-create` ở § 3, chỉ khác là bạn tự gõ header
+và body JSON thay vì để `scripts/petstore_create.py` build giúp.
+
+### 8.2. Raw `ssh` — SSH qua wstunnel
+
+```bash
+SSH_ASKPASS="$(pwd)/scripts/askpass_empty.py" SSH_ASKPASS_REQUIRE=force \
+mise exec -- ssh -tt \
+  -o StrictHostKeyChecking=accept-new \
+  -o UserKnownHostsFile=/dev/null \
+  -o LogLevel=ERROR \
+  -o "ProxyCommand=wstunnel client --log-lvl=off -L stdio://%h:%p $PETSTORE_WSS_URL" \
+  -p "$PETSTORE_SSH_PORT" "$PETSTORE_SSH_USER@$PETSTORE_SSH_HOST" -- uname -a
+```
+
+**Đã verify:** vào được pod, in đúng `Linux ai-course-demo-... 5.15.0...` —
+tương đương `mise run ssh-logs -- uname -a` ở § 4, chỉ khác là bạn tự
+dựng `ProxyCommand` và `SSH_ASKPASS` thay vì để
+`scripts/ssh_over_wstunnel.py` lo (script còn có thêm retry 5 lần cho
+known issue ở § 6 — raw command ở trên **không tự retry**).
+
+> [!TIP]
+> Nếu máy bạn có DNS resolver riêng không resolve được domain
+> `*.sandbox.vnpt-technology.vn` (hiếm, thường chỉ gặp trong môi trường
+> mạng cô lập/sandbox), thêm `--dns-resolver dns://8.8.8.8` vào lệnh
+> `wstunnel client` trong `ProxyCommand`, và với `curl` dùng
+> `--resolve <domain>:9443:<IP>` để ép IP thủ công.
+
+---
+
+## 🔗 9. Tài Liệu Tham Khảo
 
 | Tài nguyên | Đường dẫn (URL) |
 | :--- | :--- |
