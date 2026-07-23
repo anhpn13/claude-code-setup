@@ -23,12 +23,14 @@ useDefault = true
 # flag (`AKIAIOSFODNN7EXAMPLE`, `sk-test-xxxx`, `fc-0000…`). Those literal
 # fixtures would otherwise match the rules below — they are documentation,
 # not real secrets. The `.claude/hooks/` directory may contain similar
-# fixture examples in script comments.
+# fixture examples in script comments. `docs/2-core/05-HOOKS.md` quotes the
+# same hook prompt and therefore also contains the same fixtures.
 # --------------------------------------------------------------------
 [allowlist]
 paths = [
   '''\.claude/settings\.json$''',
-  '''\.claude/hooks/.*\.ps1$'''
+  '''\.claude/hooks/.*\.ps1$''',
+  '''docs/2-core/05-HOOKS\.md$'''
 ]
 
 [[rules]]
